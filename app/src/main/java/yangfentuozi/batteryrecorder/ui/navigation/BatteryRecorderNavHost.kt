@@ -11,14 +11,36 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import yangfentuozi.batteryrecorder.R
 import yangfentuozi.batteryrecorder.shared.data.BatteryStatus
 import yangfentuozi.batteryrecorder.shared.data.RecordsFile
 import yangfentuozi.batteryrecorder.ui.screens.history.HistoryListScreen
@@ -52,15 +74,115 @@ private val defaultPopExitTransition: ExitTransition = scaleOut(
     animationSpec = animationSpec
 ) + fadeOut(animationSpec = animationSpec)
 
+// ============================================
+// Bottom Navigation Items
+// ============================================
+data class BottomNavItem(
+    val route: String,
+    val labelResId: Int,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector
+)
+
+val bottomNavItems = listOf(
+    BottomNavItem(
+        route = NavRoute.Home.route,
+        labelResId = R.string.nav_home,
+        selectedIcon = Icons.Filled.Home,
+        unselectedIcon = Icons.Outlined.Home
+    ),
+    BottomNavItem(
+        route = NavRoute.History.route,
+        labelResId = R.string.nav_history,
+        selectedIcon = Icons.Filled.History,
+        unselectedIcon = Icons.Outlined.History
+    ),
+    BottomNavItem(
+        route = NavRoute.Settings.route,
+        labelResId = R.string.nav_settings,
+        selectedIcon = Icons.Filled.Settings,
+        unselectedIcon = Icons.Outlined.Settings
+    )
+)
+
+@Composable
+fun BatteryRecorderMainScreen(
+    mainViewModel: MainViewModel,
+    settingsViewModel: SettingsViewModel,
+    modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController()
+) {
+    val historyViewModel: HistorySharedViewModel = viewModel()
+
+    Scaffold(
+        modifier = modifier,
+        bottomBar = {
+            BatteryRecorderBottomBar(navController = navController)
+        }
+    ) { paddingValues ->
+        BatteryRecorderNavHost(
+            navController = navController,
+            mainViewModel = mainViewModel,
+            settingsViewModel = settingsViewModel,
+            historyViewModel = historyViewModel,
+            modifier = Modifier.padding(paddingValues)
+        )
+    }
+}
+
+@Composable
+private fun BatteryRecorderBottomBar(
+    navController: NavHostController
+) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    // Only show bottom bar on main destinations
+    val showBottomBar = currentDestination?.route in bottomNavItems.map { it.route }
+
+    if (showBottomBar) {
+        NavigationBar {
+            bottomNavItems.forEach { item ->
+                val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+
+                NavigationBarItem(
+                    selected = selected,
+                    onClick = {
+                        navController.navigate(item.route) {
+                            // Pop up to the start destination of the graph to
+                            // avoid building up a large stack of destinations
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            // Avoid multiple copies of the same destination
+                            launchSingleTop = true
+                            // Restore state when reselecting a previously selected item
+                            restoreState = true
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                            contentDescription = stringResource(item.labelResId)
+                        )
+                    },
+                    label = {
+                        Text(text = stringResource(item.labelResId))
+                    }
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun BatteryRecorderNavHost(
     navController: NavHostController,
     mainViewModel: MainViewModel,
     settingsViewModel: SettingsViewModel,
+    historyViewModel: HistorySharedViewModel,
     modifier: Modifier = Modifier
 ) {
-    val historyViewModel: HistorySharedViewModel = viewModel()
-
     NavHost(
         navController = navController,
         startDestination = NavRoute.Home.route,
@@ -69,19 +191,14 @@ fun BatteryRecorderNavHost(
         composable(
             route = NavRoute.Home.route,
             exitTransition = {
-                // 首页推入二级页时轻微左移，保留“主页面退后”的层级感。
                 slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth / 4 }) +
                         fadeOut()
             },
             popEnterTransition = {
-                // 返回首页时反向平移，与前进动画保持镜像。
                 slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth / 4 }) +
                         fadeIn()
             },
-
             enterTransition = { null },
-//            exitTransition = { defaultExitTransition },
-//            popEnterTransition = { defaultPopEnterTransition },
             popExitTransition = { null }
         ) {
             HomeScreen(
@@ -102,11 +219,44 @@ fun BatteryRecorderNavHost(
                     )
                 },
                 onNavigateToPredictionDetail = {
-                    // 预测详情页无参数，直接走固定 route。
                     navController.navigate(NavRoute.PredictionDetail.route)
                 }
             )
         }
+
+        composable(
+            route = NavRoute.History.route,
+            exitTransition = {
+                if (targetState.destination.route == NavRoute.RecordDetail.route) {
+                    slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth / 4 }) +
+                            fadeOut()
+                } else {
+                    defaultExitTransition
+                }
+            },
+            popEnterTransition = {
+                if (initialState.destination.route == NavRoute.RecordDetail.route) {
+                    slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth / 4 }) +
+                            fadeIn()
+                } else {
+                    defaultPopEnterTransition
+                }
+            },
+            popExitTransition = { defaultPopExitTransition }
+        ) {
+            // History tab - default to Charging status
+            HistoryListScreen(
+                batteryStatus = BatteryStatus.Charging,
+                viewModel = historyViewModel,
+                onNavigateToRecordDetail = { type, name ->
+                    navController.navigate(
+                        NavRoute.RecordDetail.createRoute(type.dataDirName, Uri.encode(name))
+                    )
+                },
+                settingsViewModel = settingsViewModel
+            )
+        }
+
         composable(
             route = NavRoute.Settings.route,
             enterTransition = { defaultEnterTransition },
@@ -121,6 +271,7 @@ fun BatteryRecorderNavHost(
                 }
             )
         }
+
         composable(
             route = NavRoute.PredictionDetail.route,
             enterTransition = { defaultEnterTransition },
@@ -128,11 +279,11 @@ fun BatteryRecorderNavHost(
             popEnterTransition = { defaultPopEnterTransition },
             popExitTransition = { defaultPopExitTransition }
         ) {
-            // 预测详情页依赖 SettingsViewModel 提供统计请求与展示配置。
             PredictionDetailScreen(
                 settingsViewModel = settingsViewModel
             )
         }
+
         composable(
             route = NavRoute.HistoryList.route,
             arguments = listOf(navArgument("type") { type = NavType.StringType }),
@@ -173,6 +324,7 @@ fun BatteryRecorderNavHost(
                 settingsViewModel = settingsViewModel
             )
         }
+
         composable(
             route = NavRoute.RecordDetail.route,
             arguments = listOf(

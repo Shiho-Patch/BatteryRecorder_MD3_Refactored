@@ -27,7 +27,7 @@ import yangfentuozi.batteryrecorder.ui.guide.KEY_STARTUP_GUIDE_COMPLETED
 import yangfentuozi.batteryrecorder.ui.guide.STARTUP_PROMPT_PREFS
 import yangfentuozi.batteryrecorder.ui.guide.StartupGuideScreen
 import yangfentuozi.batteryrecorder.ui.model.displayName
-import yangfentuozi.batteryrecorder.ui.navigation.BatteryRecorderNavHost
+import yangfentuozi.batteryrecorder.ui.navigation.BatteryRecorderMainScreen
 import yangfentuozi.batteryrecorder.ui.navigation.NavRoute
 import yangfentuozi.batteryrecorder.ui.viewmodel.MainViewModel
 import yangfentuozi.batteryrecorder.ui.viewmodel.SettingsViewModel
@@ -118,10 +118,10 @@ fun BatteryRecorderApp(
         )
     } else {
         val navController = rememberNavController()
-        BatteryRecorderNavHost(
-            navController = navController,
+        BatteryRecorderMainScreen(
             mainViewModel = mainViewModel,
-            settingsViewModel = settingsViewModel
+            settingsViewModel = settingsViewModel,
+            navController = navController
         )
         LaunchedEffect(Unit) {
             openCurrentRecordDetailEvent.collect {

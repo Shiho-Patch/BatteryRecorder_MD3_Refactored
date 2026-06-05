@@ -77,7 +77,7 @@ fun SplicedColumnGroup(
                             Column(
                                 modifier = Modifier
                                     .clip(shape)
-                                    .background(MaterialTheme.colorScheme.surfaceBright)
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                             ) {
                                 itemData.content()
                             }
@@ -108,7 +108,7 @@ fun SplicedColumnGroup(
                                                 .weight(1f)
                                                 .fillMaxHeight()
                                                 .clip(shape)
-                                                .background(MaterialTheme.colorScheme.surfaceBright)
+                                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                         ) {
                                             rowItem.content()
                                         }

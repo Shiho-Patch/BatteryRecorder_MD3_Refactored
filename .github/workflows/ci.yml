@@ -325,7 +325,7 @@ jobs:
             ${{ steps.buildWithGradle.outputs.mappingFile }}
 
       - name: Publish to Telegram
-        if: success() && steps.telegram.outputs.shouldPush == 'true' && (secrets.BOT_TOKEN != '' || vars.BOT_TOKEN != '')
+        if: success() && steps.telegram.outputs.shouldPush == 'true'
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN != '' && secrets.BOT_TOKEN || vars.BOT_TOKEN }}
           CHAT_ID: 5647270456

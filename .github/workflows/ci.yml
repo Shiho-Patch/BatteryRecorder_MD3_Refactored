@@ -328,8 +328,7 @@ jobs:
         if: success() && steps.telegram.outputs.shouldPush == 'true' && (secrets.BOT_TOKEN != '' || vars.BOT_TOKEN != '')
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN != '' && secrets.BOT_TOKEN || vars.BOT_TOKEN }}
-          CHAT_ID: -1003856065409
-          MESSAGE_THREAD_ID: ${{ steps.telegram.outputs.threadId }}
+          CHAT_ID: 5647270456
           CAPTION_FILE: ${{ steps.telegram.outputs.captionFile }}
           DOCUMENT_FILE: ${{ steps.buildWithGradle.outputs.releaseApk }}
         run: |
@@ -358,6 +357,5 @@ jobs:
 
           telegram_api sendDocument \
             --form chat_id="$CHAT_ID" \
-            --form message_thread_id="$MESSAGE_THREAD_ID" \
             --form-string caption="$caption" \
             --form document=@"$DOCUMENT_FILE"

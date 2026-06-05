@@ -75,19 +75,19 @@ jobs:
         run: |
           touch signing.properties
           echo KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }} >> signing.properties
-          echo KEYSTORE_ALIAS=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
-          echo KEYSTORE_ALIAS_PASSWORD='${{ secrets.KEYSTORE_ALIAS_PASSWORD }}' >> signing.properties
-          echo KEYSTORE_FILE=../key.jks >> signing.properties
-          echo '${{ secrets.KEYSTORE }}' | base64 --decode > key.jks
+          echo KEY_ALIAS=${{ secrets.KEY_ALIAS }} >> signing.properties
+          echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}' >> signing.properties
+          echo '${{ secrets.KEYSTORE_FILE }}' | base64 --decode > keystore.jks
+          echo KEYSTORE_FILE=keystore.jks >> signing.properties
 
       - name: Write temporary key
-        if: hashFiles('key.jks') == ''
+        if: hashFiles('keystore.jks') == ''
         run: |
-          keytool -genkey -alias a -dname CN=_ -storepass passwd -keypass passwd -keystore key.jks -keyalg RSA
+          keytool -genkey -alias a -dname CN=_ -storepass passwd -keypass passwd -keystore keystore.jks -keyalg RSA -keysize 2048 -sigalg SHA256withRSA -storetype PKCS12 -validity 10000
           echo KEYSTORE_PASSWORD=passwd >> signing.properties
-          echo KEYSTORE_ALIAS=a >> signing.properties
-          echo KEYSTORE_ALIAS_PASSWORD=passwd >> signing.properties
-          echo KEYSTORE_FILE=../key.jks >> signing.properties
+          echo KEY_ALIAS=a >> signing.properties
+          echo KEY_PASSWORD=passwd >> signing.properties
+          echo KEYSTORE_FILE=keystore.jks >> signing.properties
 
       - name: Cache Gradle Dependencies
         uses: actions/cache@v4

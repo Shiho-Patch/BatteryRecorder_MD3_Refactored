@@ -325,7 +325,7 @@ jobs:
             ${{ steps.buildWithGradle.outputs.mappingFile }}
 
       - name: Publish to Telegram
-        if: success() && steps.telegram.outputs.shouldPush == 'true'
+        if: success() && steps.telegram.outputs.shouldPush == 'true' && (secrets.BOT_TOKEN != '' || vars.BOT_TOKEN != '')
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN != '' && secrets.BOT_TOKEN || vars.BOT_TOKEN }}
           CHAT_ID: -1003856065409
@@ -339,8 +339,8 @@ jobs:
           caption=`cat "$CAPTION_FILE"`
 
           if [ -z "$BOT_TOKEN" ]; then
-            echo "[Telegram] BOT_TOKEN 未配置" >&2
-            exit 1
+            echo "[Telegram] BOT_TOKEN 未配置，跳过" >&2
+            exit 0
           fi
 
           telegram_api() {

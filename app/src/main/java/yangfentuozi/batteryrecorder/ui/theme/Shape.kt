@@ -75,6 +75,7 @@ object AppShape {
     val medium = RoundedCornerShape(12.dp)
     val large = RoundedCornerShape(16.dp)
     val extraLarge = RoundedCornerShape(28.dp)
+    val icon = RoundedCornerShape(16.dp) // 图标剪裁专用
 
     object SplicedGroup {
         val single = SplicedGroupSingle

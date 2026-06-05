@@ -70,24 +70,24 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Write key
+      - name: Write signing key
         if: github.event_name != 'pull_request'
         run: |
           touch signing.properties
           echo KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }} >> signing.properties
           echo KEYSTORE_ALIAS=${{ secrets.KEY_ALIAS }} >> signing.properties
-          echo KEYSTORE_ALIAS_PASSWORD='${{ secrets.KEY_PASSWORD }}' >> signing.properties
-          echo '${{ secrets.KEYSTORE_FILE }}' | base64 --decode > keystore.jks
-          echo KEYSTORE_FILE=keystore.jks >> signing.properties
+          echo KEYSTORE_ALIAS_PASSWORD=${{ secrets.KEY_PASSWORD }} >> signing.properties
+          printf '%s' '${{ secrets.KEYSTORE_FILE }}' | base64 --decode > app/keystore.jks
+          echo KEYSTORE_FILE=app/keystore.jks >> signing.properties
 
       - name: Write temporary key
-        if: hashFiles('keystore.jks') == ''
+        if: github.event_name != 'pull_request' && hashFiles('app/keystore.jks') == ''
         run: |
-          keytool -genkey -alias a -dname CN=_ -storepass passwd -keypass passwd -keystore keystore.jks -keyalg RSA -keysize 2048 -sigalg SHA256withRSA -storetype PKCS12 -validity 10000
+          keytool -genkey -alias a -dname CN=_ -storepass passwd -keypass passwd -keystore app/keystore.jks -keyalg RSA -keysize 2048 -sigalg SHA256withRSA -storetype PKCS12 -validity 10000
           echo KEYSTORE_PASSWORD=passwd >> signing.properties
           echo KEYSTORE_ALIAS=a >> signing.properties
           echo KEYSTORE_ALIAS_PASSWORD=passwd >> signing.properties
-          echo KEYSTORE_FILE=keystore.jks >> signing.properties
+          echo KEYSTORE_FILE=app/keystore.jks >> signing.properties
 
       - name: Cache Gradle Dependencies
         uses: actions/cache@v4
